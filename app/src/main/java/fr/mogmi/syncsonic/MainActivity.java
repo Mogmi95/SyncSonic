@@ -24,6 +24,8 @@ import java.io.File;
 
 import fr.mogmi.syncsonic.model.Ping;
 import fr.mogmi.syncsonic.model.SubsonicResponse;
+import fr.mogmi.syncsonic.model.directory.Child;
+import fr.mogmi.syncsonic.model.directory.DirectoryContainer;
 import fr.mogmi.syncsonic.model.starred.StarredAlbum;
 import fr.mogmi.syncsonic.model.starred.StarredArtist;
 import fr.mogmi.syncsonic.model.starred.StarredContainer;
@@ -126,15 +128,18 @@ public class MainActivity extends AppCompatActivity {
                 appendText("ARTISTS :");
                 for (StarredArtist artist : response.body().subsonicResponse.starred.artists) {
                     appendText(artist.name);
+                    downloadDirectory(artist.id);
                 }
                 appendText("ALBUMS :");
                 for (StarredAlbum album : response.body().subsonicResponse.starred.albums) {
                     appendText("[" + album.year + "] " + album.title);
+                    downloadDirectory(album.id);
                 }
                 appendText("SONG :");
+                // Direct download
                 for (StarredSong song : response.body().subsonicResponse.starred.songs) {
                     appendText(song.artist + " - " + song.title);
-                    startDownload(song);
+                    startDownload(song.path, song.id, song.title);
                 }
             }
 
@@ -143,7 +148,27 @@ public class MainActivity extends AppCompatActivity {
                 t.printStackTrace();
             }
         });
+    }
 
+    private void downloadDirectory(@NonNull String id) {
+        Call<SubsonicResponse<DirectoryContainer>> directory = subsonicHelper.getDirectory(id);
+        directory.enqueue(new Callback<SubsonicResponse<DirectoryContainer>>() {
+            @Override
+            public void onResponse(Call<SubsonicResponse<DirectoryContainer>> call, Response<SubsonicResponse<DirectoryContainer>> response) {
+                for (Child child : response.body().subsonicResponse.directory.childs) {
+                    if (child.isDirectory) {
+                        downloadDirectory(child.id);
+                    } else {
+                        startDownload(child.path, child.id, child.title);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<SubsonicResponse<DirectoryContainer>> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
 
     private void ping() {
@@ -169,21 +194,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void startDownload(@NonNull StarredSong song) {
+    private void startDownload(@NonNull String path,
+                               @NonNull String id,
+                               @NonNull String title) {
+        String dirPath = path.substring(0, path.lastIndexOf("/"));
+        String filename = path.substring(path.lastIndexOf("/"), path.length());
+
         // Creating the directory
         File musicDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
-        String directoryPath = "SYNCSONIC/" + song.artist + "/[" + song.year + "] " + song.album;
+        String directoryPath = "Syncsonic/" + dirPath;
         File directory = new File(musicDirectory, directoryPath);
         directory.mkdirs();
         // Creating the file
-        String filename = String.format("%02d", song.track) + " - " + song.title + "." + song.suffix;
         File file = new File(directory, filename);
         if (!file.exists()) {
-            String url = subsonicHelper.getDownloadLink(song.id);
-            Log.i("DOWNLOAD", "File : " + file.toString());
-            Log.i("DOWNLOAD", "URL : " + url);
+            String url = subsonicHelper.getDownloadLink(id);
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setDestinationUri(Uri.fromFile(file));
+            request.setTitle(title);
             mgr.enqueue(request);
         }
     }

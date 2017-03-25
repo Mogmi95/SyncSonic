@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 
 import fr.mogmi.syncsonic.model.Ping;
 import fr.mogmi.syncsonic.model.SubsonicResponse;
+import fr.mogmi.syncsonic.model.directory.DirectoryContainer;
 import fr.mogmi.syncsonic.model.starred.StarredContainer;
 import fr.mogmi.syncsonic.tools.SecurityHelper;
 import retrofit2.Call;
@@ -83,6 +84,24 @@ public class SubsonicHelper {
                 username,
                 SecurityHelper.md5(password + salt),
                 salt
+        );
+    }
+
+    /**
+     * Retrieve the content of a directory
+     *
+     * @return A retrofit {@link Call}
+     */
+    public Call<SubsonicResponse<DirectoryContainer>> getDirectory(@NonNull String id) {
+        String salt = SecurityHelper.randomString(20);
+        return subsonicService.getDirectory(
+                format,
+                app,
+                version,
+                username,
+                SecurityHelper.md5(password + salt),
+                salt,
+                id
         );
     }
 

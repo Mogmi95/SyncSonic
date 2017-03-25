@@ -13,14 +13,18 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import fr.mogmi.syncsonic.model.Ping;
 import fr.mogmi.syncsonic.model.SubsonicResponse;
@@ -38,13 +42,19 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static fr.mogmi.syncsonic.R.id.fab;
+
 public class MainActivity extends AppCompatActivity {
 
     private final static int RC_PERMISSION_WRITE_EXTERNAL_STORAGE = 42;
 
-    private TextView mainText;
+    private RecyclerView recyclerView;
     private SubsonicHelper subsonicHelper;
     private DownloadManager mgr;
+    private FloatingActionButton actionButton;
+
+    private ArrayList<SyncedItem> syncedItems = new ArrayList<>();
+    private DownloadsAdapter downloadsAdapter;
 
     SharedPreferences prefs;
 
@@ -55,13 +65,18 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mainText = (TextView) findViewById(R.id.main_text);
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(layoutManager);
+        downloadsAdapter = new DownloadsAdapter(syncedItems);
+        recyclerView.setAdapter(downloadsAdapter);
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         mgr = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        actionButton = (FloatingActionButton) findViewById(fab);
+        actionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 sync();
@@ -120,27 +135,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sync() {
+        recyclerView.setVisibility(View.VISIBLE);
+
+        Animation rotation = AnimationUtils.loadAnimation(this, R.anim.spin);
+        rotation.setRepeatCount(Animation.INFINITE);
+        actionButton.startAnimation(rotation);
+
+        syncedItems.clear();
+        downloadsAdapter.notifyDataSetChanged();
         Call<SubsonicResponse<StarredContainer>> starred = subsonicHelper.getStarred();
         Log.i("STARRED", String.valueOf(starred.request().url()));
         starred.enqueue(new Callback<SubsonicResponse<StarredContainer>>() {
             @Override
             public void onResponse(Call<SubsonicResponse<StarredContainer>> call, Response<SubsonicResponse<StarredContainer>> response) {
-                appendText("ARTISTS :");
                 for (StarredArtist artist : response.body().subsonicResponse.starred.artists) {
-                    appendText(artist.name);
                     downloadDirectory(artist.id);
                 }
-                appendText("ALBUMS :");
                 for (StarredAlbum album : response.body().subsonicResponse.starred.albums) {
-                    appendText("[" + album.year + "] " + album.title);
                     downloadDirectory(album.id);
                 }
-                appendText("SONG :");
-                // Direct download
                 for (StarredSong song : response.body().subsonicResponse.starred.songs) {
-                    appendText(song.artist + " - " + song.title);
-                    startDownload(song.path, song.id, song.title);
+                    startDownload(song.path, song.id, song.artist, song.title);
                 }
+                actionButton.clearAnimation();
             }
 
             @Override
@@ -159,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
                     if (child.isDirectory) {
                         downloadDirectory(child.id);
                     } else {
-                        startDownload(child.path, child.id, child.title);
+                        startDownload(child.path, child.id, child.artist, child.title);
                     }
                 }
             }
@@ -189,13 +206,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void appendText(String text) {
-        mainText.append(text + "\n");
-    }
-
-
     private void startDownload(@NonNull String path,
                                @NonNull String id,
+                               @NonNull String artist,
                                @NonNull String title) {
         String dirPath = path.substring(0, path.lastIndexOf("/"));
         String filename = path.substring(path.lastIndexOf("/"), path.length());
@@ -213,7 +226,11 @@ public class MainActivity extends AppCompatActivity {
             request.setDestinationUri(Uri.fromFile(file));
             request.setTitle(title);
             mgr.enqueue(request);
+            syncedItems.add(new SyncedItem(true, artist, title));
+        } else {
+            syncedItems.add(new SyncedItem(false, artist, title));
         }
+        downloadsAdapter.notifyDataSetChanged();
     }
 
 }

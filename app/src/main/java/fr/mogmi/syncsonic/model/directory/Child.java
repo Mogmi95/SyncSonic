@@ -22,6 +22,9 @@ public class Child {
     public String title;
 
     @Expose
+    public String artist;
+
+    @Expose
     public String path;
 
     @Expose

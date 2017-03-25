@@ -66,7 +66,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(prefs.getString("server_url", ""))
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        subsonicHelper = new SubsonicHelper(
+                retrofit,
+                SubsonicHelper.DEFAULT_FORMAT,
+                SubsonicHelper.DEFAULT_APP_NAME,
+                SubsonicHelper.DEFAULT_APP_VERSION,
+                prefs.getString("server_login", ""),
+                prefs.getString("server_password", "")
+        );
+
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, RC_PERMISSION_WRITE_EXTERNAL_STORAGE);
+
+        ping();
     }
 
     @Override
@@ -102,38 +118,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sync() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(prefs.getString("server_url", ""))
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        Log.i("TAG", "LOGIN : " + prefs.getString("server_login", ""));
-        Log.i("TAG", "MDP : " + prefs.getString("server_password", ""));
-
-        subsonicHelper = new SubsonicHelper(
-                retrofit,
-                SubsonicHelper.DEFAULT_FORMAT,
-                SubsonicHelper.DEFAULT_APP_NAME,
-                SubsonicHelper.DEFAULT_APP_VERSION,
-                prefs.getString("server_login", ""),
-                prefs.getString("server_password", "")
-        );
-
-        Call<SubsonicResponse<Ping>> ping = subsonicHelper.getPing();
-
-        Log.i("PING", String.valueOf(ping.request().url()));
-
-        ping.enqueue(new Callback<SubsonicResponse<Ping>>() {
-            @Override
-            public void onResponse(Call<SubsonicResponse<Ping>> call, Response<SubsonicResponse<Ping>> response) {
-                Log.i("PING", response.body().subsonicResponse.status);
-            }
-
-            @Override
-            public void onFailure(Call<SubsonicResponse<Ping>> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
-
         Call<SubsonicResponse<StarredContainer>> starred = subsonicHelper.getStarred();
         Log.i("STARRED", String.valueOf(starred.request().url()));
         starred.enqueue(new Callback<SubsonicResponse<StarredContainer>>() {
@@ -160,6 +144,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private void ping() {
+        final Call<SubsonicResponse<Ping>> ping = subsonicHelper.getPing();
+
+        Log.i("PING", String.valueOf(ping.request().url()));
+
+        ping.enqueue(new Callback<SubsonicResponse<Ping>>() {
+            @Override
+            public void onResponse(Call<SubsonicResponse<Ping>> call, Response<SubsonicResponse<Ping>> response) {
+                Log.i("PING", response.body().subsonicResponse.status);
+            }
+
+            @Override
+            public void onFailure(Call<SubsonicResponse<Ping>> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
 
     private void appendText(String text) {

@@ -30,6 +30,10 @@ public final class SecurityHelper {
 
         m.update(s.getBytes(), 0, s.length());
         String hash = new BigInteger(1, m.digest()).toString(16);
+        // A bit lazy to come up with a better method here o/
+        while (hash.length() < 32) {
+            hash = "0" + hash;
+        }
         return hash;
     }
 

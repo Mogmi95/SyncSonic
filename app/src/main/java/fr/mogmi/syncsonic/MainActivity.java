@@ -24,8 +24,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent openSettings = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(openSettings);
+
             }
         });
     }
@@ -46,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent openSettings = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(openSettings);
             return true;
         }
 

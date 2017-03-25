@@ -62,4 +62,15 @@ public interface SubsonicService {
             @Query("t") String token,
             @Query("s") String salt
     );
+
+    @GET("rest/download.view")
+    Call<Object> getDownload(
+            @Query("f") String format,
+            @Query("c") String app,
+            @Query("v") String version,
+            @Query("u") String user,
+            @Query("t") String token,
+            @Query("s") String salt,
+            @Query("id") String id
+    );
 }

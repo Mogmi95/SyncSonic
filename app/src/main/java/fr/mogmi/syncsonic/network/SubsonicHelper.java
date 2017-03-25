@@ -85,4 +85,25 @@ public class SubsonicHelper {
                 salt
         );
     }
+
+    /**
+     * Retrieve an URL to download a file from the server
+     *
+     * @param id The id of the element to download
+     * @return A {@link String} representing an url linking to the file
+     */
+    public String getDownloadLink(@NonNull String id) {
+        String salt = SecurityHelper.randomString(20);
+        Call call = subsonicService.getDownload(
+                format,
+                app,
+                version,
+                username,
+                SecurityHelper.md5(password + salt),
+                salt,
+                id
+        );
+
+        return call.request().url().toString();
+    }
 }

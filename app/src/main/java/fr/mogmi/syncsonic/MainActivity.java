@@ -1,10 +1,17 @@
 package fr.mogmi.syncsonic;
 
+import android.Manifest;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -12,6 +19,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+
+import java.io.File;
 
 import fr.mogmi.syncsonic.model.Ping;
 import fr.mogmi.syncsonic.model.SubsonicResponse;
@@ -29,7 +38,11 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final static int RC_PERMISSION_WRITE_EXTERNAL_STORAGE = 42;
+
     private TextView mainText;
+    private SubsonicHelper subsonicHelper;
+    private DownloadManager mgr;
 
     SharedPreferences prefs;
 
@@ -43,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         mainText = (TextView) findViewById(R.id.main_text);
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mgr = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -51,6 +65,16 @@ public class MainActivity extends AppCompatActivity {
                 sync();
             }
         });
+
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, RC_PERMISSION_WRITE_EXTERNAL_STORAGE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == RC_PERMISSION_WRITE_EXTERNAL_STORAGE) {
+            // TODO Handle permission
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override
@@ -85,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i("TAG", "LOGIN : " + prefs.getString("server_login", ""));
         Log.i("TAG", "MDP : " + prefs.getString("server_password", ""));
 
-        SubsonicHelper subsonicHelper = new SubsonicHelper(
+        subsonicHelper = new SubsonicHelper(
                 retrofit,
                 SubsonicHelper.DEFAULT_FORMAT,
                 SubsonicHelper.DEFAULT_APP_NAME,
@@ -126,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
                 appendText("SONG :");
                 for (StarredSong song : response.body().subsonicResponse.starred.songs) {
                     appendText(song.artist + " - " + song.title);
+                    startDownload(song);
                 }
             }
 
@@ -142,6 +167,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
+    private void startDownload(@NonNull StarredSong song) {
+        // Creating the directory
+        File musicDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+        String directoryPath = "SYNCSONIC/" + song.artist + "/[" + song.year + "] " + song.album;
+        File directory = new File(musicDirectory, directoryPath);
+        directory.mkdirs();
+        // Creating the file
+        String filename = String.format("%02d", song.track) + " - " + song.title + "." + song.suffix;
+        File file = new File(directory, filename);
+        if (!file.exists()) {
+            String url = subsonicHelper.getDownloadLink(song.id);
+            Log.i("DOWNLOAD", "File : " + file.toString());
+            Log.i("DOWNLOAD", "URL : " + url);
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setDestinationUri(Uri.fromFile(file));
+            mgr.enqueue(request);
+        }
+    }
 
 }

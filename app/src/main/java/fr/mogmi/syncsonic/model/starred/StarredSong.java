@@ -32,8 +32,14 @@ public class StarredSong {
     public int year;
 
     @Expose
+    public int track;
+
+    @Expose
     public String coverArt;
 
     @Expose
     public String path;
+
+    @Expose
+    public String suffix;
 }

@@ -274,6 +274,9 @@ public class MainActivity extends AppCompatActivity {
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setDestinationUri(Uri.fromFile(file));
             request.setTitle(title);
+            if (prefs.getBoolean("sync_wifi_only", true)) {
+                request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
+            }
             mgr.enqueue(request);
             syncedItems.add(new SyncedItem(true, artist, title));
         } else {

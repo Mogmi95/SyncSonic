@@ -5,6 +5,6 @@
     <SwitchPreference
         android:defaultValue="true"
         android:key="notifications_new_message"
-        android:title="@string/pref_title_new_message_notifications" />
+        android:title="HARDCODED" />
 
 </PreferenceScreen>

@@ -198,6 +198,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
     }
 
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        finish();
+        return true;
+    }
+
     /**
      * This fragment shows data and sync preferences only. It is used when the
      * activity is showing a two-pane settings UI.

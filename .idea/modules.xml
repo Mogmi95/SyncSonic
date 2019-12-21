@@ -3,7 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Syncsonic.iml" filepath="$PROJECT_DIR$/Syncsonic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/Syncsonic-app.iml" filepath="$PROJECT_DIR$/app/Syncsonic-app.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/perso-Syncsonic.iml" filepath="$PROJECT_DIR$/perso-Syncsonic.iml" />
     </modules>
   </component>
 </project>

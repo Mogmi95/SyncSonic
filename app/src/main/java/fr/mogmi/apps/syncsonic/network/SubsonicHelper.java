@@ -1,6 +1,6 @@
 package fr.mogmi.apps.syncsonic.network;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import fr.mogmi.apps.syncsonic.model.Ping;
 import fr.mogmi.apps.syncsonic.model.SubsonicResponse;
